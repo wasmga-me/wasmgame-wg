@@ -3,14 +3,15 @@
 The engine for [wasmga.me](https://wasmga.me)'s own games written in Rust:
 the Rust side of the C games' `wg.h`, `wgfb.h` and `wgview.h`. A game
 implements `wg::Game`, calls `wg::game!(MyGame)` once, and gets every `wg_*`
-export the play page (wasmgame `src/scripts/engines/native.ts`) reads,
+export the wasmga.me play page reads,
 smooth drawing at the screen's own size, and the same Inter font as the C
-games (`sdf_font.h`). The games themselves live in the wasmgame repo under
-`games-src/<id>/`; `games-src/wgdemo` there is a whole small game to copy.
+games (`sdf_font.h`). The games themselves live in
+[wasmga-me/games](https://github.com/wasmga-me/games), one folder each;
+`wgdemo` there is a whole small game to copy.
 
 ```toml
 [dependencies]
-wg = { git = "https://github.com/iris-offloading/wasmgame-wg" }
+wg = { git = "https://github.com/wasmga-me/wasmgame-wg" }
 ```
 
 Each game's `Cargo.lock` pins the engine commit; `cargo update -p wg` moves a
@@ -18,13 +19,13 @@ game to the latest one.
 
 ## New game
 
-1. `cp -r games-src/wgdemo games-src/<id>`, rename the package in its
+1. In the games repo, `cp -r wgdemo <id>`, rename the package in its
    `Cargo.toml` to `<id>` (the module is built as `public/games/<id>/<id>.wasm`),
    delete its `target/` (keep `Cargo.lock`, it pins the engine).
-2. Write the game (below), then `sh games-src/build.sh` (or
+2. Write the game (below), then `sh build.sh` (or
    `cargo build --release --target wasm32-unknown-unknown` in the folder while
    iterating; `rustup target add wasm32-unknown-unknown` once).
-3. Catalog entry with `engine: "native"`, `setup`, `stats`, `pointer: true`
+3. On the site: a catalog entry with `engine: "native"`, `setup`, `stats`, `pointer: true`
    if it takes clicks or touches, and `swipe: true` for swipe games. Commit
    the built `.wasm` and the game's `Cargo.lock`: Workers Builds has no Rust,
    so build.sh keeps the committed build there.
@@ -91,8 +92,9 @@ Keys the pad lacks (digits, Backspace) reach `Game::key(code)` through the
 optional `wg_key` export, when the page sends them.
 
 The font's characters are those in `sdf_font.h`; add more with
-`tools/sdf-font.py` (Pillow and NumPy) and copy the file to wasmgame's
-`games-src/` so the C games get them too.
+`tools/sdf-font.py` (Pillow and NumPy) and copy the file to
+[wasmgame-wg-c](https://github.com/wasmga-me/wasmgame-wg-c) so the C games
+get them too.
 
 ## Working on the engine
 

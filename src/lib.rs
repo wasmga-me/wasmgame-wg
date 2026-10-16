@@ -1,9 +1,9 @@
-//! The wasmga.me native game ABI (games-src/wg.h) for games written in Rust,
+//! The wasmga.me native game ABI (wg.h in wasmga-me/wasmgame-wg-c) for games written in Rust,
 //! with smooth drawing at the screen's own size (wgfb.h and wgview.h, in
 //! [`Screen`]) and the same Inter font as the C games (sdf_font.h).
 //!
 //! A game implements [`Game`] and calls [`game!`] once; that exports every
-//! wg_* function the page (src/scripts/engines/native.ts) looks for. The
+//! wg_* function the play page looks for. The
 //! page draws the setup, pause and game over screens from the catalog's
 //! `setup` and `stats`, so a game has no menus of its own: it starts a run
 //! in [`Game::start`] with the options picked, says when the run is over,
