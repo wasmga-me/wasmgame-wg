@@ -114,7 +114,24 @@ pub struct Screen {
 
 impl Screen {
     pub(crate) fn new(w: i32, h: i32) -> Self {
-        let mut s = Screen { layers: vec![Vec::new()], cur: 0, w: 0, h: 0, sw: 0, sh: 0, k: 1.0, ox: 0.0, oy: 0.0, pw: 1.0, ph: 1.0, bg_key: 0, cx0: 0, cy0: 0, cx1: 0, cy1: 0 };
+        let mut s = Screen {
+            layers: vec![Vec::new()],
+            cur: 0,
+            w: 0,
+            h: 0,
+            sw: 0,
+            sh: 0,
+            k: 1.0,
+            ox: 0.0,
+            oy: 0.0,
+            pw: 1.0,
+            ph: 1.0,
+            bg_key: 0,
+            cx0: 0,
+            cy0: 0,
+            cx1: 0,
+            cy1: 0,
+        };
         s.resize(w, h);
         s
     }
@@ -287,7 +304,8 @@ impl Screen {
         if r <= 0.0 || alpha <= 0.0 {
             return;
         }
-        let (x0, y0, x1, y1) = self.clip(ax.min(bx) - r - 1.0, ay.min(by) - r - 1.0, ax.max(bx) + r + 1.0, ay.max(by) + r + 1.0);
+        let (x0, y0, x1, y1) =
+            self.clip(ax.min(bx) - r - 1.0, ay.min(by) - r - 1.0, ax.max(bx) + r + 1.0, ay.max(by) + r + 1.0);
         let (dx, dy) = (bx - ax, by - ay);
         let ll = dx * dx + dy * dy;
         let inv = if ll > 0.0 { 1.0 / ll } else { 0.0 };
@@ -344,7 +362,8 @@ impl Screen {
         if rm <= 0.0 || alpha <= 0.0 {
             return;
         }
-        let (x0, y0, x1, y1) = self.clip(ax.min(bx) - rm - 1.0, ay.min(by) - rm - 1.0, ax.max(bx) + rm + 1.0, ay.max(by) + rm + 1.0);
+        let (x0, y0, x1, y1) =
+            self.clip(ax.min(bx) - rm - 1.0, ay.min(by) - rm - 1.0, ax.max(bx) + rm + 1.0, ay.max(by) + rm + 1.0);
         let (dx, dy) = (bx - ax, by - ay);
         let ll = dx * dx + dy * dy;
         let inv = if ll > 0.0 { 1.0 / ll } else { 0.0 };
@@ -378,13 +397,29 @@ impl Screen {
 
     /// A shadow that leaves out its middle (`hollow` units in from the box's
     /// edge), for shadows under something opaque: cheaper.
-    pub fn shadow_hollow(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, soft: f32, c: u32, alpha: f32, hollow: f32) {
+    pub fn shadow_hollow(
+        &mut self,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        r: f32,
+        soft: f32,
+        c: u32,
+        alpha: f32,
+        hollow: f32,
+    ) {
         self.shadow_(x, y, w, h, r, soft, c, alpha, hollow);
     }
 
     fn shadow_(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, soft: f32, c: u32, alpha: f32, hollow: f32) {
         let k = self.k;
-        let (x0, y0, x1, y1) = self.clip(self.sx(x - soft) - 1.0, self.sy(y - soft) - 1.0, self.sx(x + w + soft) + 1.0, self.sy(y + h + soft) + 1.0);
+        let (x0, y0, x1, y1) = self.clip(
+            self.sx(x - soft) - 1.0,
+            self.sy(y - soft) - 1.0,
+            self.sx(x + w + soft) + 1.0,
+            self.sy(y + h + soft) + 1.0,
+        );
         let s = soft * k + 1.0;
         let (cx, cy) = (self.sx(x + w / 2.0), self.sy(y + h / 2.0));
         let rr = r.min(w.min(h) / 2.0) * k;
@@ -619,7 +654,8 @@ impl Screen {
                 if ix < -1 || ix >= w {
                     continue;
                 }
-                let v = (at(ix, iy) * (1.0 - tx) + at(ix + 1, iy) * tx) * (1.0 - ty) + (at(ix, iy + 1) * (1.0 - tx) + at(ix + 1, iy + 1) * tx) * ty;
+                let v = (at(ix, iy) * (1.0 - tx) + at(ix + 1, iy) * tx) * (1.0 - ty)
+                    + (at(ix, iy + 1) * (1.0 - tx) + at(ix + 1, iy + 1) * tx) * ty;
                 let cov = ((v - 128.0) * scale + 0.5).clamp(0.0, 1.0);
                 if cov > 0.0 {
                     blend(&mut row[i as usize], c, cov256(cov, alpha));
@@ -674,18 +710,46 @@ impl Screen {
     /// Draws the plan box x, y, w, h into `sp` with `draw(screen)` (in the
     /// same plan units) when `key` or the scale changed; its pixels must end
     /// up opaque. Then put it with [`Screen::sprite`].
-    pub fn sprite_make(&mut self, sp: &mut Sprite, key: u32, x: f32, y: f32, w: f32, h: f32, draw: impl FnMut(&mut Screen)) {
+    pub fn sprite_make(
+        &mut self,
+        sp: &mut Sprite,
+        key: u32,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        draw: impl FnMut(&mut Screen),
+    ) {
         self.sprite_make_(sp, key, x, y, w, h, false, draw)
     }
 
     /// A sprite with soft or see-through edges (a gem, a coin): drawn twice
     /// (over black and white) to find its alpha, then blended when put. `draw`
     /// must draw the same thing both times.
-    pub fn sprite_make_alpha(&mut self, sp: &mut Sprite, key: u32, x: f32, y: f32, w: f32, h: f32, mut draw: impl FnMut(&mut Screen)) {
+    pub fn sprite_make_alpha(
+        &mut self,
+        sp: &mut Sprite,
+        key: u32,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        mut draw: impl FnMut(&mut Screen),
+    ) {
         self.sprite_make_(sp, key, x, y, w, h, true, |s| draw(s))
     }
 
-    fn sprite_make_<F: FnMut(&mut Screen)>(&mut self, sp: &mut Sprite, key: u32, x: f32, y: f32, w: f32, h: f32, alpha: bool, mut draw: F) {
+    fn sprite_make_<F: FnMut(&mut Screen)>(
+        &mut self,
+        sp: &mut Sprite,
+        key: u32,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        alpha: bool,
+        mut draw: F,
+    ) {
         let key = hash(key, &[alpha as u8]);
         let key = hash(hash(key, &self.k.to_le_bytes()), &[x.to_bits() as u8, y.to_bits() as u8]) | 1;
         let (pw, ph) = ((w * self.k).ceil() as i32, (h * self.k).ceil() as i32);

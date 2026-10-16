@@ -23,8 +23,12 @@ fn main() {
         }
         glyphs.push_str(&format!(
             "    Glyph {{ off: {}, w: {}, h: {}, left: {:?}, adv: {:?}, top: {:?} }},\n",
-            v[0], v[1], v[2],
-            v[3].parse::<f32>().unwrap(), v[4].parse::<f32>().unwrap(), v[5].parse::<f32>().unwrap()
+            v[0],
+            v[1],
+            v[2],
+            v[3].parse::<f32>().unwrap(),
+            v[4].parse::<f32>().unwrap(),
+            v[5].parse::<f32>().unwrap()
         ));
     }
     let data_start = h.find("SDF_DATA[").expect("SDF_DATA");

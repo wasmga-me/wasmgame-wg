@@ -470,7 +470,11 @@ macro_rules! game {
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_stat(i: i32) -> i32 {
-            if i < 0 { -1 } else { <$t as $crate::Game>::stat(&WG_GAME.get().game, i as usize) }
+            if i < 0 {
+                -1
+            } else {
+                <$t as $crate::Game>::stat(&WG_GAME.get().game, i as usize)
+            }
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_reached() -> i32 {
