@@ -1,0 +1,9 @@
+[package]
+name = "wg"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "The wasmga.me native game ABI (wg.h) and smooth drawing (wgfb.h, wgview.h) for games written in Rust"
+
+[lib]
+path = "src/lib.rs"
