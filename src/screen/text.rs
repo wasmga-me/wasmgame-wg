@@ -1,6 +1,6 @@
 //! Text in Inter, from the signed distance fields in sdf_font.h.
 
-use super::{blend, cov256, Screen};
+use super::{blend, weight, Screen};
 use font::{Glyph, SDF_CHARS, SDF_DATA, SDF_EM, SDF_GLYPHS, SDF_SPREAD};
 
 /// The font tables, made from sdf_font.h by build.rs.
@@ -70,9 +70,12 @@ impl Screen {
             return;
         }
         let f = &SDF_DATA[g.off as usize..g.off as usize + (w * h) as usize];
-        let (x0, y0, x1, y1) = self.clip(gx, gy, gx + w as f32 * k, gy + h as f32 * k);
+        let (x0, y0, x1, y1) = self.clipped(gx, gy, gx + w as f32 * k, gy + h as f32 * k);
         let inv = 1.0 / k;
+        // the field holds 128 on the glyph's edge and moves 127 over
+        // SDF_SPREAD field pixels; this turns it into screen pixels
         let scale = SDF_SPREAD / 127.0 * k;
+        // the field at x, y, empty outside the glyph's box
         let at = |x: i32, y: i32| -> f32 {
             if x < 0 || y < 0 || x >= w || y >= h {
                 0.0
@@ -80,16 +83,15 @@ impl Screen {
                 f[(y * w + x) as usize] as f32
             }
         };
-        let sw = self.w as usize;
-        let buf = &mut self.layers[self.cur];
-        for j in y0..y1 {
+        for (j, row) in self.rows(y0, y1) {
+            // where the pixel's centre falls in the field, and the four
+            // field values around it to blend
             let fy = (j as f32 + 0.5 - gy) * inv - 0.5;
             let iy = fy.floor() as i32;
             let ty = fy - iy as f32;
             if iy < -1 || iy >= h {
                 continue;
             }
-            let row = &mut buf[j as usize * sw..(j as usize + 1) * sw];
             for i in x0..x1 {
                 let fx = (i as f32 + 0.5 - gx) * inv - 0.5;
                 let ix = fx.floor() as i32;
@@ -101,7 +103,7 @@ impl Screen {
                     + (at(ix, iy + 1) * (1.0 - tx) + at(ix + 1, iy + 1) * tx) * ty;
                 let cov = ((v - 128.0) * scale + 0.5).clamp(0.0, 1.0);
                 if cov > 0.0 {
-                    blend(&mut row[i as usize], c, cov256(cov, alpha));
+                    blend(&mut row[i as usize], c, weight(cov, alpha));
                 }
             }
         }

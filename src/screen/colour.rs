@@ -34,7 +34,9 @@ pub fn mix(c: u32, d: u32, t: f32) -> u32 {
     out
 }
 
+/// The blend weight (0..256, for [`blend`]) of a pixel a shape covers
+/// `cov` (0..1) of, drawn at `alpha`.
 #[inline(always)]
-pub(crate) fn cov256(cov: f32, alpha: f32) -> u32 {
+pub(crate) fn weight(cov: f32, alpha: f32) -> u32 {
     (cov * alpha * 256.0) as u32
 }
