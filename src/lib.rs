@@ -14,29 +14,18 @@
 //! the run in it, options included, and everything else (animations, hover,
 //! sprites) in the game struct around it. See README.md next to this file.
 
-mod font {
-    pub struct Glyph {
-        pub off: u32,
-        pub w: u8,
-        pub h: u8,
-        pub left: f32,
-        pub adv: f32,
-        pub top: f32,
-    }
-    include!(concat!(env!("OUT_DIR"), "/sdf_font.rs"));
-}
 mod game;
 mod input;
 mod rng;
 mod runtime;
 mod screen;
 
-pub use game::{bytes_of, Game, Plain};
+pub use game::{bytes_of, hash, Game, Plain};
 pub use input::{Input, KeyRepeat, Pointer, A, B, DIRS, DOWN, LEFT, M_LEFT, M_MIDDLE, M_RIGHT, RIGHT, UP};
 pub use rng::Rng;
 #[doc(hidden)]
 pub use runtime::{Runtime, Slot};
-pub use screen::{blend, hash, hex, mix, rgb, Screen, Sprite};
+pub use screen::{blend, hex, mix, rgb, Screen, Sprite};
 
 /// Events a frame returns; the page plays a sound for each.
 pub const EV_BLIP: u32 = 1;

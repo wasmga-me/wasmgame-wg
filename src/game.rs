@@ -1,6 +1,6 @@
 //! The trait a game implements, and what its save may hold.
 
-use crate::{hash, Input, KeyRepeat, Pointer, Rng, Screen};
+use crate::{Input, KeyRepeat, Pointer, Rng, Screen};
 
 /// A type that is safe to fill from any bytes a save holds: integers,
 /// floats, arrays of them and `#[repr(C)]` structs of those. Never bool,
@@ -104,4 +104,14 @@ pub fn bytes_of<T: Plain>(t: &T) -> &[u8] {
     // SAFETY: Plain types have no invalid bit patterns; reading padding is
     // fine for a hash and a byte copy
     unsafe { core::slice::from_raw_parts(t as *const T as *const u8, core::mem::size_of::<T>()) }
+}
+
+/// FNV-1a over bytes, for redraw signatures and cache keys.
+pub fn hash(h: u32, bytes: &[u8]) -> u32 {
+    let mut h = if h == 0 { 2_166_136_261 } else { h };
+    for &b in bytes {
+        h ^= b as u32;
+        h = h.wrapping_mul(16_777_619);
+    }
+    h
 }

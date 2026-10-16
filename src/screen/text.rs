@@ -1,0 +1,125 @@
+//! Text in Inter, from the signed distance fields in sdf_font.h.
+
+use super::{blend, cov256, Screen};
+use font::{Glyph, SDF_CHARS, SDF_DATA, SDF_EM, SDF_GLYPHS, SDF_SPREAD};
+
+/// The font tables, made from sdf_font.h by build.rs.
+mod font {
+    pub struct Glyph {
+        pub off: u32,
+        pub w: u8,
+        pub h: u8,
+        pub left: f32,
+        pub adv: f32,
+        pub top: f32,
+    }
+    include!(concat!(env!("OUT_DIR"), "/sdf_font.rs"));
+}
+
+impl Screen {
+    /// Width of `s` at `size` (the em) in plan units.
+    pub fn text_width(&self, s: &str, size: f32) -> f32 {
+        text_width_px(s, size)
+    }
+
+    /// Text with its left edge at x and the middle of its digits at cy;
+    /// returns the x after it. Characters the font lacks draw as spaces.
+    pub fn text(&mut self, s: &str, x: f32, cy: f32, size: f32, c: u32, alpha: f32) -> f32 {
+        let k = self.k;
+        let end = self.text_px(s, self.sx(x), self.sy(cy), size * k, c, alpha);
+        (end - self.ox) / k
+    }
+
+    /// Text centred on x.
+    pub fn text_c(&mut self, s: &str, cx: f32, cy: f32, size: f32, c: u32, alpha: f32) {
+        let w = self.text_width(s, size);
+        self.text(s, cx - w / 2.0, cy, size, c, alpha);
+    }
+
+    /// Text ending at x.
+    pub fn text_r(&mut self, s: &str, rx: f32, cy: f32, size: f32, c: u32, alpha: f32) {
+        let w = self.text_width(s, size);
+        self.text(s, rx - w, cy, size, c, alpha);
+    }
+
+    /// The biggest size up to `size` at which `s` fits in `max_w`.
+    pub fn fit_size(&self, s: &str, size: f32, max_w: f32) -> f32 {
+        let w = self.text_width(s, size);
+        if w > max_w && w > 0.0 {
+            size * max_w / w
+        } else {
+            size
+        }
+    }
+
+    /// Text in screen pixels: left edge x, digits' middle cy, em `size`.
+    pub fn text_px(&mut self, s: &str, mut x: f32, cy: f32, size: f32, c: u32, alpha: f32) -> f32 {
+        let k = size / SDF_EM;
+        let top = cy - DIGIT_MID * k;
+        for ch in s.chars() {
+            let g = &SDF_GLYPHS[glyph(ch)];
+            self.draw_glyph(g, x + g.left * k, top + g.top * k, k, c, alpha);
+            x += g.adv * k;
+        }
+        x
+    }
+
+    fn draw_glyph(&mut self, g: &Glyph, gx: f32, gy: f32, k: f32, c: u32, alpha: f32) {
+        let (w, h) = (g.w as i32, g.h as i32);
+        if w == 0 || alpha <= 0.0 {
+            return;
+        }
+        let f = &SDF_DATA[g.off as usize..g.off as usize + (w * h) as usize];
+        let (x0, y0, x1, y1) = self.clip(gx, gy, gx + w as f32 * k, gy + h as f32 * k);
+        let inv = 1.0 / k;
+        let scale = SDF_SPREAD / 127.0 * k;
+        let at = |x: i32, y: i32| -> f32 {
+            if x < 0 || y < 0 || x >= w || y >= h {
+                0.0
+            } else {
+                f[(y * w + x) as usize] as f32
+            }
+        };
+        let sw = self.w as usize;
+        let buf = &mut self.layers[self.cur];
+        for j in y0..y1 {
+            let fy = (j as f32 + 0.5 - gy) * inv - 0.5;
+            let iy = fy.floor() as i32;
+            let ty = fy - iy as f32;
+            if iy < -1 || iy >= h {
+                continue;
+            }
+            let row = &mut buf[j as usize * sw..(j as usize + 1) * sw];
+            for i in x0..x1 {
+                let fx = (i as f32 + 0.5 - gx) * inv - 0.5;
+                let ix = fx.floor() as i32;
+                let tx = fx - ix as f32;
+                if ix < -1 || ix >= w {
+                    continue;
+                }
+                let v = (at(ix, iy) * (1.0 - tx) + at(ix + 1, iy) * tx) * (1.0 - ty)
+                    + (at(ix, iy + 1) * (1.0 - tx) + at(ix + 1, iy + 1) * tx) * ty;
+                let cov = ((v - 128.0) * scale + 0.5).clamp(0.0, 1.0);
+                if cov > 0.0 {
+                    blend(&mut row[i as usize], c, cov256(cov, alpha));
+                }
+            }
+        }
+    }
+}
+
+/// Middle of the digits' height below the line top, in em units.
+const DIGIT_MID: f32 = 24.6;
+
+fn glyph(ch: char) -> usize {
+    if ch.is_ascii() {
+        SDF_CHARS.iter().position(|&c| c == ch as u8).unwrap_or(0)
+    } else {
+        0
+    }
+}
+
+fn text_width_px(s: &str, size: f32) -> f32 {
+    let k = size / SDF_EM;
+    s.chars().map(|ch| SDF_GLYPHS[glyph(ch)].adv * k).sum()
+}
