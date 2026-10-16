@@ -1,3 +1,5 @@
+//! A random number generator small enough to live in a save.
+
 /// xorshift32, small enough to live in a save.
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

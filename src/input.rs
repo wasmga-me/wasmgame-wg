@@ -40,6 +40,11 @@ pub struct Pointer {
     pub touch: bool,
 }
 
+/// How long an arrow is held before it repeats, and how often it then
+/// repeats, in ms.
+const REPEAT_DELAY: i32 = 300;
+const REPEAT_EVERY: i32 = 70;
+
 /// Held arrows repeat after a delay, like keys in a text box.
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Default)]
@@ -50,7 +55,9 @@ impl KeyRepeat {
     pub fn dirs(&mut self, input: &Input) -> u32 {
         let dirs = input.held & DIRS;
         if input.pressed & dirs != 0 {
-            self.0 = -230;
+            // counts up to REPEAT_EVERY, so the first repeat comes after
+            // REPEAT_DELAY
+            self.0 = REPEAT_EVERY - REPEAT_DELAY;
             return input.pressed & dirs;
         }
         if dirs == 0 {
@@ -58,8 +65,8 @@ impl KeyRepeat {
             return 0;
         }
         self.0 += input.dt;
-        if self.0 >= 70 {
-            self.0 -= 70;
+        if self.0 >= REPEAT_EVERY {
+            self.0 -= REPEAT_EVERY;
             return dirs;
         }
         0

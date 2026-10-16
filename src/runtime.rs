@@ -3,29 +3,56 @@
 
 use core::cell::UnsafeCell;
 
-use crate::{Game, Input, Pointer, Screen, A, B, DIRS};
+use crate::{Game, Input, Pointer, Screen, A, B, DIRS, M_LEFT, M_MIDDLE, M_RIGHT};
 
+/// The canvas size until the page sends its own with wg_resize.
+const FIRST_SIZE: (i32, i32) = (512, 448);
+/// Longest frame step a game gets, in ms (after a stall, say).
+const MAX_DT: i32 = 100;
+/// The seed a run starts with when a bad save is dropped.
+const FALLBACK_SEED: u32 = 0x1234;
+/// wg_mouse's buttons: the three mouse buttons, and the touch bit.
+const MOUSE_BUTTONS: u32 = M_LEFT | M_RIGHT | M_MIDDLE;
+const TOUCH: i32 = 8;
+
+/// The game and its screen, with what the exports remember between calls.
 #[doc(hidden)]
 pub struct Runtime<G: Game> {
     pub game: G,
     pub screen: Screen,
-    prev: u32,
-    mouse: u32,
-    pending: u32,
-    sig: u32,
-    force: bool,
+    /// buttons held on the last frame, to find the newly pressed ones
+    buttons: u32,
+    /// pointer buttons held at the last wg_mouse
+    mouse_buttons: u32,
+    /// events from `Game::pointer`, returned with the next frame
+    pointer_events: u32,
+    /// `Game::picture` when the screen was last drawn
+    picture: u32,
+    /// draw on the next frame whatever `picture` says (new run, resize, load)
+    redraw: bool,
+    /// the last frame drew (wg_drawn)
     drawn: bool,
 }
 
 impl<G: Game> Runtime<G> {
     fn new() -> Self {
         let game = G::new();
-        let mut screen = Screen::new(512, 448);
+        let mut screen = Screen::new(FIRST_SIZE.0, FIRST_SIZE.1);
         let (pw, ph) = game.plan(screen.sw, screen.sh);
         screen.fit(pw, ph);
-        Runtime { game, screen, prev: 0, mouse: 0, pending: 0, sig: 0, force: true, drawn: false }
+        Runtime {
+            game,
+            screen,
+            buttons: 0,
+            mouse_buttons: 0,
+            pointer_events: 0,
+            picture: 0,
+            redraw: true,
+            drawn: false,
+        }
     }
 
+    /// wg_init: a new run, keeping the options the page set.
     pub fn init(&mut self, seed: u32) {
         let keep: Vec<i32> = self.game.options().to_vec();
         self.game.start(seed);
@@ -33,91 +60,105 @@ impl<G: Game> Runtime<G> {
         if opts.len() == keep.len() {
             opts.copy_from_slice(&keep);
         }
-        self.prev = 0;
-        self.pending = 0;
-        self.force = true;
+        self.buttons = 0;
+        self.pointer_events = 0;
+        self.redraw = true;
     }
 
+    /// wg_resize: the canvas is now w x h pixels.
     pub fn resize(&mut self, w: i32, h: i32) {
         self.screen.resize(w, h);
-        self.force = true;
+        self.redraw = true;
     }
 
+    /// wg_option: sets option i to v when v is one of its choices (a v out of
+    /// range only reads it); returns the option's value, -1 for no option i.
     pub fn option(&mut self, i: i32, v: i32) -> i32 {
         let opts = self.game.options();
         let Some(slot) = usize::try_from(i).ok().filter(|&i| i < opts.len() && i < G::CHOICES.len()) else {
             return -1;
         };
-        if v >= 0 && v < G::CHOICES[slot] {
+        if (0..G::CHOICES[slot]).contains(&v) {
             opts[slot] = v;
         }
         opts[slot]
     }
 
+    /// wg_frame: moves the game on by dt ms and draws it if the picture
+    /// changed; returns the frame's events.
     pub fn frame(&mut self, buttons: i32, dt: i32) -> i32 {
         let held = buttons as u32 & (DIRS | A | B);
-        let input = Input { held, pressed: held & !self.prev, dt: dt.clamp(0, 100) };
-        self.prev = held;
-        let ev = self.pending | self.game.update(&input);
-        self.pending = 0;
+        let input = Input { held, pressed: held & !self.buttons, dt: dt.clamp(0, MAX_DT) };
+        self.buttons = held;
+        let events = self.pointer_events | self.game.update(&input);
+        self.pointer_events = 0;
+        // a game may lay out differently as the screen changes shape
         let (pw, ph) = self.game.plan(self.screen.sw, self.screen.sh);
         if pw != self.screen.pw || ph != self.screen.ph {
             self.screen.fit(pw, ph);
             self.screen.forget_background();
-            self.force = true;
+            self.redraw = true;
         }
-        let sig = self.game.picture();
-        self.drawn = self.force || self.game.moving() || sig != self.sig;
+        let picture = self.game.picture();
+        self.drawn = self.redraw || self.game.moving() || picture != self.picture;
         if self.drawn {
             self.game.draw(&mut self.screen);
-            self.sig = sig;
-            self.force = false;
+            self.picture = picture;
+            self.redraw = false;
         }
-        ev as i32
+        events as i32
     }
 
-    pub fn mouse(&mut self, x: i32, y: i32, b: i32) {
-        let held = b as u32 & 7;
+    /// wg_mouse: the pointer at screen pixel x, y (-1, -1 when it left).
+    pub fn mouse(&mut self, x: i32, y: i32, buttons: i32) {
+        let held = buttons as u32 & MOUSE_BUTTONS;
         let mut p = Pointer {
             x: -1.0,
             y: -1.0,
             inside: x >= 0 && y >= 0,
             held,
-            pressed: held & !self.mouse,
-            released: self.mouse & !held,
-            touch: b & 8 != 0,
+            pressed: held & !self.mouse_buttons,
+            released: self.mouse_buttons & !held,
+            touch: buttons & TOUCH != 0,
         };
-        self.mouse = held;
+        self.mouse_buttons = held;
         if p.inside {
             (p.x, p.y) = self.screen.to_plan(x, y);
         }
-        self.pending |= self.game.pointer(&p);
+        self.pointer_events |= self.game.pointer(&p);
     }
 
     pub fn drawn(&self) -> i32 {
         self.drawn as i32
     }
 
+    /// wg_state: where the page reads and writes the save.
     pub fn state(&mut self) -> *mut u8 {
         self.game.save() as *mut G::Save as *mut u8
     }
 
+    /// wg_state_loaded: the page just wrote a save into `state()`. Keeps it
+    /// when its options are in range and the game takes it; otherwise
+    /// starts a new run. Returns 1 when kept.
     pub fn state_loaded(&mut self) -> i32 {
-        let ok = {
-            let opts = self.game.options();
-            opts.len() == G::CHOICES.len() && opts.iter().zip(G::CHOICES).all(|(&o, &n)| o >= 0 && o < n)
-        } && self.game.loaded();
+        let ok = self.options_valid() && self.game.loaded();
         // buttons held as the save loads don't count as presses
-        self.prev = !0;
-        self.mouse = 0;
-        self.pending = 0;
-        self.force = true;
+        self.buttons = !0;
+        self.mouse_buttons = 0;
+        self.pointer_events = 0;
+        self.redraw = true;
         self.screen.forget_background();
         if !ok {
             self.game = G::new();
-            self.init(0x1234);
+            self.init(FALLBACK_SEED);
         }
         ok as i32
+    }
+
+    /// Every option is one of its choices.
+    fn options_valid(&mut self) -> bool {
+        let opts = self.game.options();
+        opts.len() == G::CHOICES.len() && opts.iter().zip(G::CHOICES).all(|(&o, &n)| (0..n).contains(&o))
     }
 }
 
