@@ -730,18 +730,19 @@ impl Screen {
         sp.key = key;
     }
 
-    /// Copies a sprite with its top left at plan x, y, to the nearest pixel.
+    /// Copies a sprite with its top left at plan x, y, to the nearest pixel,
+    /// inside the clip rectangle.
     pub fn sprite(&mut self, sp: &Sprite, x: f32, y: f32) {
         let dx = (self.sx(x) + 0.5).floor() as i32;
         let dy = (self.sy(y) + 0.5).floor() as i32;
-        let (i0, i1) = ((-dx).max(0), sp.w.min(self.w - dx));
+        let (i0, i1) = ((self.cx0 - dx).max(0), sp.w.min(self.cx1 - dx));
         if i1 <= i0 {
             return;
         }
         let sw = self.w as usize;
         for j in 0..sp.h {
             let yy = dy + j;
-            if yy < 0 || yy >= self.h {
+            if yy < self.cy0 || yy >= self.cy1 {
                 continue;
             }
             let d = yy as usize * sw + (dx + i0) as usize;
