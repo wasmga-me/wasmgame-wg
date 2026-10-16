@@ -154,6 +154,14 @@ pub trait Game: Sized + 'static {
     fn reached(&self) -> i32 {
         -1
     }
+    /// For a level select: the level this run cleared last (0 for the
+    /// first) and the score made on that level alone, or None. Return
+    /// `EV_LEVEL` from `update` on the frame a level is cleared (the last
+    /// one too, with `EV_WIN | EV_GAMEOVER`): the page then reads this, keeps
+    /// the player's best for that level and posts it to the level's board.
+    fn cleared(&self) -> Option<(i32, u32)> {
+        None
+    }
     /// Stat i for the game over screen, in the catalog `stats` order; -1
     /// hides it.
     fn stat(&self, _i: usize) -> i32 {
@@ -465,6 +473,14 @@ macro_rules! game {
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_reached() -> i32 {
             <$t as $crate::Game>::reached(&WG_GAME.get().game)
+        }
+        #[unsafe(no_mangle)]
+        pub extern "C" fn wg_cleared() -> i32 {
+            <$t as $crate::Game>::cleared(&WG_GAME.get().game).map_or(-1, |c| c.0)
+        }
+        #[unsafe(no_mangle)]
+        pub extern "C" fn wg_level_score() -> u32 {
+            <$t as $crate::Game>::cleared(&WG_GAME.get().game).map_or(0, |c| c.1)
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_score() -> u32 {
