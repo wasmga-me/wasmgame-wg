@@ -121,7 +121,9 @@ pub trait Game: Sized + 'static {
     }
     /// A key the pad doesn't cover (wg_key, from the page): the character's
     /// code point for single characters ('1' is 49), 8 Backspace, 127
-    /// Delete. Return true when the game used it.
+    /// Delete. Digits come by physical key, so '0'..'9' on any layout and
+    /// the number pad; with Shift they add 0x100 (Shift+1 is 0x131). Return
+    /// true when the game used it (its key repeats are then swallowed).
     fn key(&mut self, _code: i32) -> bool {
         false
     }
