@@ -93,3 +93,16 @@ optional `wg_key` export, when the page sends them.
 The font's characters are those in `sdf_font.h`; add more with
 `tools/sdf-font.py` (Pillow and NumPy) and copy the file to wasmgame's
 `games-src/` so the C games get them too.
+
+## Working on the engine
+
+`src/lib.rs` holds the events and re-exports; `game.rs` the `Game` trait and
+`Plain`, `input.rs` buttons, pointer and key repeat, `rng.rs` the `Rng`,
+`runtime.rs` the exports and `game!`, and `screen/` the drawing (`mod.rs`
+the screen and its clip, then `shapes.rs`, `text.rs`, `background.rs`,
+`sprite.rs`, `colour.rs`).
+
+`cargo test` draws one of everything through the exports and checks the
+pixels by hash, so a change that should leave the picture alone proves it;
+when a change means to alter it, update the hashes the test prints. Run
+`cargo fmt` before committing.
