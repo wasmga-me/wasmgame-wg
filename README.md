@@ -52,6 +52,12 @@ game to the latest one.
   resize or a load.
 - `over()` is true from the moment the run is lost or won (no autosave then,
   no Resume); `stat(i)` gives the catalog `stats` in order (-1 hides one).
+- Levels: a catalog `setup` option with `"levels": N` (no `choices`; they
+  are made as Level 1..N) is a level picker. Give it N in `CHOICES`, start
+  the run at the level picked, and return the level the run is on from
+  `reached()` (0 for the first). The page keeps the furthest level reached on
+  this device and offers only levels up to it, so the picker appears once a
+  player has got past level 1.
 - `loaded()` checks a save just copied in: return false to drop it, and
   rebuild anything that follows from the save (and reset animations).
 - `PLAN` (or `plan(w, h)` to lay out differently on a tall phone) is the

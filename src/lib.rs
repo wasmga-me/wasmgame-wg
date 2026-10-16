@@ -147,6 +147,13 @@ pub trait Game: Sized + 'static {
     fn over(&self) -> bool {
         false
     }
+    /// For a level picker (a catalog `setup` option with `levels`, whose
+    /// choice is the level to start at, 0 for the first): the level the run
+    /// is on now. The page remembers the furthest per device and offers
+    /// only levels up to it. -1 when the game has no levels.
+    fn reached(&self) -> i32 {
+        -1
+    }
     /// Stat i for the game over screen, in the catalog `stats` order; -1
     /// hides it.
     fn stat(&self, _i: usize) -> i32 {
@@ -454,6 +461,10 @@ macro_rules! game {
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_stat(i: i32) -> i32 {
             if i < 0 { -1 } else { <$t as $crate::Game>::stat(&WG_GAME.get().game, i as usize) }
+        }
+        #[unsafe(no_mangle)]
+        pub extern "C" fn wg_reached() -> i32 {
+            <$t as $crate::Game>::reached(&WG_GAME.get().game)
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_score() -> u32 {
