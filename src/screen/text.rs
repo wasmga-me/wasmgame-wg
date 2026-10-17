@@ -16,7 +16,7 @@ pub struct Glyph {
 }
 
 /// A game's glyphs beyond Inter's (its translations), made by
-/// `tools/sdf-font.py --extra src/<lang>_glyphs.rs src/*.rs`; `chars` is sorted.
+/// `tools/sdf-font.py --extra src/glyphs.rs src/*.rs`; `chars` is sorted.
 pub struct Glyphs {
     pub chars: &'static [char],
     pub glyphs: &'static [Glyph],

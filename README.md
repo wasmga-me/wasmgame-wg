@@ -99,13 +99,15 @@ get them too.
 ## Languages
 
 The page tells the game its language before `wg_init` (`wg_lang`); pick the
-text with `wg::tr("Undo", "撤销")`, or `wg::zh()` around a `format!`. Text
-outside ASCII needs its glyphs: `python3 tools/sdf-font.py --extra
-src/zh_glyphs.rs src/*.rs` (from the game's folder, with this repo's tool)
-writes the Chinese characters the game's string literals use, from Noto Sans
-SC, into `src/zh_glyphs.rs` and `src/zh_glyphs.bin`; `mod zh_glyphs;` and
-`wg::add_glyphs(&zh_glyphs::GLYPHS)` in `new()` turn them on. Run it again
-after changing the text.
+text with `wg::tr(&["Undo", "撤销", "元に戻す"])`, one string per language in
+`wg::LANGS` order (English for any left out), or match on `wg::lang()` around
+a `format!`. Text outside ASCII needs its glyphs: `python3 tools/sdf-font.py
+--extra src/glyphs.rs src/*.rs` (from the game's folder, with this repo's
+tool) writes every character the game's string literals use beyond
+`sdf_font.h` (accented Latin and Cyrillic from Inter, kana, Hangul and Han
+from Noto Sans) into `src/glyphs.rs` and `src/glyphs.bin`; `mod glyphs;` and
+`wg::add_glyphs(&glyphs::GLYPHS)` in `new()` turn them on. Run it again after
+changing the text.
 
 ## Working on the engine
 

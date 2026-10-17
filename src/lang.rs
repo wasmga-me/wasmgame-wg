@@ -5,41 +5,40 @@
 //! language of the page it is loaded on. Text outside ASCII needs its glyphs:
 //! see [`crate::Glyphs`].
 
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-const fn code(a: u8, b: u8) -> i32 {
-    a as i32 | (b as i32) << 8
-}
+/// The languages a game's text comes in, in this order (as wg.h's WG_LANGS).
+pub const LANGS: [&str; 9] = ["en", "zh", "ja", "ko", "es", "pt", "fr", "de", "ru"];
+pub const EN: usize = 0;
+pub const ZH: usize = 1;
+pub const JA: usize = 2;
+pub const KO: usize = 3;
+pub const ES: usize = 4;
+pub const PT: usize = 5;
+pub const FR: usize = 6;
+pub const DE: usize = 7;
+pub const RU: usize = 8;
 
-pub const EN: i32 = code(b'e', b'n');
-pub const ZH: i32 = code(b'z', b'h');
+static LANG: AtomicUsize = AtomicUsize::new(EN);
 
-static LANG: AtomicI32 = AtomicI32::new(EN);
-
-/// The page's language, such as [`ZH`].
-pub fn lang() -> i32 {
+/// The page's language, as an index into [`LANGS`] ([`EN`] for one it lacks).
+pub fn lang() -> usize {
     LANG.load(Ordering::Relaxed)
 }
 
-/// Whether the page is in Chinese.
-pub fn zh() -> bool {
-    lang() == ZH
+/// The text in the page's language, from one string per language in
+/// [`LANGS`] order: `wg::tr(&["Undo", "撤销", "元に戻す"])`. English for
+/// languages left out or given as "".
+pub fn tr(text: &[&'static str]) -> &'static str {
+    text.get(lang()).copied().filter(|s| !s.is_empty()).unwrap_or(text[0])
 }
 
-/// `en`, or `zh` on a Chinese page: `wg::tr("Undo", "撤销")`.
-pub fn tr(en: &'static str, zh: &'static str) -> &'static str {
-    if self::zh() {
-        zh
-    } else {
-        en
-    }
-}
-
-/// wg_lang: sets the language when `code` is above 0; returns it.
+/// wg_lang: sets the language when `code` is above 0; returns the one used.
 #[doc(hidden)]
 pub fn set_lang(code: i32) -> i32 {
+    let code_of = |l: &str| l.as_bytes()[0] as i32 | (l.as_bytes()[1] as i32) << 8;
     if code > 0 {
-        LANG.store(code, Ordering::Relaxed);
+        LANG.store(LANGS.iter().position(|&l| code_of(l) == code).unwrap_or(EN), Ordering::Relaxed);
     }
-    lang()
+    code_of(LANGS[lang()])
 }

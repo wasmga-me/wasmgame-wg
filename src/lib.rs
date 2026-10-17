@@ -25,7 +25,7 @@ pub use game::{bytes_of, hash, Game, Plain};
 pub use input::{Input, KeyRepeat, Pointer, A, B, DIRS, DOWN, LEFT, M_LEFT, M_MIDDLE, M_RIGHT, RIGHT, UP};
 #[doc(hidden)]
 pub use lang::set_lang;
-pub use lang::{lang, tr, zh, EN, ZH};
+pub use lang::{lang, tr, DE, EN, ES, FR, JA, KO, LANGS, PT, RU, ZH};
 pub use rng::Rng;
 #[doc(hidden)]
 pub use runtime::{Runtime, Slot};
