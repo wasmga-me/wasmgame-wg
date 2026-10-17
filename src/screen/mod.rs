@@ -12,6 +12,7 @@ mod text;
 use colour::weight;
 pub use colour::{blend, hex, mix, rgb};
 pub use sprite::Sprite;
+pub use text::{add_glyphs, Glyph, Glyphs};
 
 /// The sides a buffer may have, in pixels (the page caps the canvas at
 /// 2.4 MP).

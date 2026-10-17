@@ -248,6 +248,10 @@ macro_rules! game {
             WG_GAME.get().option(i, v)
         }
         #[unsafe(no_mangle)]
+        pub extern "C" fn wg_lang(code: i32) -> i32 {
+            $crate::set_lang(code)
+        }
+        #[unsafe(no_mangle)]
         pub extern "C" fn wg_over() -> i32 {
             <$t as $crate::Game>::over(&WG_GAME.get().game) as i32
         }
