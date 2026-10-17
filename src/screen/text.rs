@@ -1,19 +1,39 @@
 //! Text in Inter, from the signed distance fields in sdf_font.h.
 
 use super::{blend, weight, Screen};
-use font::{Glyph, SDF_CHARS, SDF_DATA, SDF_EM, SDF_GLYPHS, SDF_SPREAD};
+use font::{SDF_CHARS, SDF_DATA, SDF_EM, SDF_GLYPHS, SDF_SPREAD};
+use std::sync::OnceLock;
+
+/// One glyph's signed distance field: where it starts in its data, its size
+/// in field pixels, and its left bearing, advance and top in em units of 40.
+pub struct Glyph {
+    pub off: u32,
+    pub w: u8,
+    pub h: u8,
+    pub left: f32,
+    pub adv: f32,
+    pub top: f32,
+}
+
+/// A game's glyphs beyond Inter's (its translations), made by
+/// `tools/sdf-font.py --extra src/<lang>_glyphs.rs src/*.rs`; `chars` is sorted.
+pub struct Glyphs {
+    pub chars: &'static [char],
+    pub glyphs: &'static [Glyph],
+    pub data: &'static [u8],
+}
 
 /// The font tables, made from sdf_font.h by build.rs.
 mod font {
-    pub struct Glyph {
-        pub off: u32,
-        pub w: u8,
-        pub h: u8,
-        pub left: f32,
-        pub adv: f32,
-        pub top: f32,
-    }
+    use super::Glyph;
     include!(concat!(env!("OUT_DIR"), "/sdf_font.rs"));
+}
+
+static EXTRA: OnceLock<&'static Glyphs> = OnceLock::new();
+
+/// Adds a game's own glyphs to the text functions, once, from `Game::new`.
+pub fn add_glyphs(glyphs: &'static Glyphs) {
+    let _ = EXTRA.set(glyphs);
 }
 
 impl Screen {
@@ -57,19 +77,19 @@ impl Screen {
         let k = size / SDF_EM;
         let top = cy - DIGIT_MID * k;
         for ch in s.chars() {
-            let g = &SDF_GLYPHS[glyph(ch)];
-            self.draw_glyph(g, x + g.left * k, top + g.top * k, k, c, alpha);
+            let (g, data) = glyph(ch);
+            self.draw_glyph((g, data), x + g.left * k, top + g.top * k, k, c, alpha);
             x += g.adv * k;
         }
         x
     }
 
-    fn draw_glyph(&mut self, g: &Glyph, gx: f32, gy: f32, k: f32, c: u32, alpha: f32) {
+    fn draw_glyph(&mut self, (g, data): (&Glyph, &[u8]), gx: f32, gy: f32, k: f32, c: u32, alpha: f32) {
         let (w, h) = (g.w as i32, g.h as i32);
         if w == 0 || alpha <= 0.0 {
             return;
         }
-        let f = &SDF_DATA[g.off as usize..g.off as usize + (w * h) as usize];
+        let f = &data[g.off as usize..g.off as usize + (w * h) as usize];
         let (x0, y0, x1, y1) = self.clipped(gx, gy, gx + w as f32 * k, gy + h as f32 * k);
         let inv = 1.0 / k;
         // the field holds 128 on the glyph's edge and moves 127 over
@@ -113,15 +133,22 @@ impl Screen {
 /// Middle of the digits' height below the line top, in em units.
 const DIGIT_MID: f32 = 24.6;
 
-fn glyph(ch: char) -> usize {
+/// The glyph for `ch` and the data its field is in: Inter's, the game's own
+/// (add_glyphs), or a space.
+fn glyph(ch: char) -> (&'static Glyph, &'static [u8]) {
     if ch.is_ascii() {
-        SDF_CHARS.iter().position(|&c| c == ch as u8).unwrap_or(0)
-    } else {
-        0
+        if let Some(i) = SDF_CHARS.iter().position(|&c| c == ch as u8) {
+            return (&SDF_GLYPHS[i], SDF_DATA);
+        }
+    } else if let Some(extra) = EXTRA.get() {
+        if let Ok(i) = extra.chars.binary_search(&ch) {
+            return (&extra.glyphs[i], extra.data);
+        }
     }
+    (&SDF_GLYPHS[0], SDF_DATA)
 }
 
 fn text_width_px(s: &str, size: f32) -> f32 {
     let k = size / SDF_EM;
-    s.chars().map(|ch| SDF_GLYPHS[glyph(ch)].adv * k).sum()
+    s.chars().map(|ch| glyph(ch).0.adv * k).sum()
 }

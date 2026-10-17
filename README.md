@@ -96,6 +96,17 @@ The font's characters are those in `sdf_font.h`; add more with
 [wasmgame-wg-c](https://github.com/wasmga-me/wasmgame-wg-c) so the C games
 get them too.
 
+## Languages
+
+The page tells the game its language before `wg_init` (`wg_lang`); pick the
+text with `wg::tr("Undo", "撤销")`, or `wg::zh()` around a `format!`. Text
+outside ASCII needs its glyphs: `python3 tools/sdf-font.py --extra
+src/zh_glyphs.rs src/*.rs` (from the game's folder, with this repo's tool)
+writes the Chinese characters the game's string literals use, from Noto Sans
+SC, into `src/zh_glyphs.rs` and `src/zh_glyphs.bin`; `mod zh_glyphs;` and
+`wg::add_glyphs(&zh_glyphs::GLYPHS)` in `new()` turn them on. Run it again
+after changing the text.
+
 ## Working on the engine
 
 `src/lib.rs` holds the events and re-exports; `game.rs` the `Game` trait and

@@ -16,16 +16,20 @@
 
 mod game;
 mod input;
+mod lang;
 mod rng;
 mod runtime;
 mod screen;
 
 pub use game::{bytes_of, hash, Game, Plain};
 pub use input::{Input, KeyRepeat, Pointer, A, B, DIRS, DOWN, LEFT, M_LEFT, M_MIDDLE, M_RIGHT, RIGHT, UP};
+#[doc(hidden)]
+pub use lang::set_lang;
+pub use lang::{lang, tr, zh, EN, ZH};
 pub use rng::Rng;
 #[doc(hidden)]
 pub use runtime::{Runtime, Slot};
-pub use screen::{blend, hex, mix, rgb, Screen, Sprite};
+pub use screen::{add_glyphs, blend, hex, mix, rgb, Glyph, Glyphs, Screen, Sprite};
 
 /// Events a frame returns; the page plays a sound for each.
 pub const EV_BLIP: u32 = 1;
