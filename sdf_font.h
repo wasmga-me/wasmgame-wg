@@ -5,7 +5,8 @@
 #define SDF_SPREAD 5.0f
 static const char SDF_CHARS[] = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-.,:!?'/%()^<>";
 /* offset, w, h, left bearing, advance, top */
-static const struct { unsigned int off; unsigned char w, h; float left, adv, top; } SDF_GLYPHS[] = {
+struct sdf_glyph { unsigned int off; unsigned char w, h; float left, adv, top; };
+static const struct sdf_glyph SDF_GLYPHS[] = {
   {0, 0, 0, 0.000f, 7.988f, 0.000f},
   {0, 35, 39, -4.000f, 26.602f, 5.125f},
   {1365, 24, 38, -4.000f, 16.035f, 5.625f},
