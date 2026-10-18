@@ -140,7 +140,9 @@ fn glyph(ch: char) -> (&'static Glyph, &'static [u8]) {
         if let Some(i) = SDF_CHARS.iter().position(|&c| c == ch as u8) {
             return (&SDF_GLYPHS[i], SDF_DATA);
         }
-    } else if let Some(extra) = EXTRA.get() {
+    }
+    // a game's own glyphs: other scripts, and ASCII sdf_font.h lacks (~ @ {)
+    if let Some(extra) = EXTRA.get() {
         if let Ok(i) = extra.chars.binary_search(&ch) {
             return (&extra.glyphs[i], extra.data);
         }

@@ -4,7 +4,7 @@ ExtraBold glyphs, so the native games can draw smooth text at any size.
 
 With --extra, writes one game's extra glyphs instead: every character
 outside sdf_font.h found in the string literals of the given source files
-(its translations): accented Latin, Greek and Cyrillic from Inter, kana
+(its translations, and ASCII such as ~ @ { that it lacks): accented Latin, Greek and Cyrillic from Inter, kana
 from Noto Sans JP, Hangul from Noto Sans KR and the rest (Han) from Noto
 Sans SC, all ExtraBold, set on Inter's baseline. A file ending in .h is for wgfb.h (C games); one ending in
 .rs is for the Rust engine (wg::Glyphs), with its fields in a .bin beside it.
@@ -102,12 +102,17 @@ def main_font():
 STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
 
 
+def unescape(lit):
+    """A string literal's characters, with \\" and \\\\ read as one character."""
+    return re.sub(r"\\(.)", r"\1", lit)
+
+
 def wanted(sources):
     """Characters in the sources' string literals that sdf_font.h lacks."""
     chars = set()
     for src in sources:
         for m in STRING.finditer(Path(src).read_text(encoding="utf-8")):
-            chars.update(c for c in m.group(1) if ord(c) > 127)
+            chars.update(c for c in unescape(m.group(1)) if c not in CHARS and (ord(c) > 127 or c.isprintable()))
     return sorted(chars)
 
 
