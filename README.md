@@ -100,7 +100,8 @@ get them too.
 
 The page tells the game its language before `wg_init` (`wg_lang`); pick the
 text with `wg::tr(&["Undo", "撤销", "元に戻す"])`, one string per language in
-`wg::LANGS` order (English for any left out), or match on `wg::lang()` around
+`wg::LANGS` order (English for any left out; Traditional Chinese, last, falls
+back to the Simplified text), or match on `wg::lang()` around
 a `format!`. Text outside ASCII needs its glyphs: `python3 tools/sdf-font.py
 --extra src/glyphs.rs src/*.rs` (from the game's folder, with this repo's
 tool) writes every character the game's string literals use beyond
