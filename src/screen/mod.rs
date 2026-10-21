@@ -122,6 +122,14 @@ impl Screen {
         ((px as f32 + 0.5 - self.ox) / self.k, (py as f32 + 0.5 - self.oy) / self.k)
     }
 
+    /// Makes the screen an overlay the page lays over a picture of its own
+    /// (a game drawn in 3D): each pixel keeps its coverage as alpha, so a
+    /// screen cleared to 0 holds premultiplied colour where it was drawn on
+    /// and stays clear elsewhere. Off, every pixel drawn on is opaque.
+    pub fn overlay(&mut self, on: bool) {
+        colour::set_overlay(on);
+    }
+
     /// One screen pixel in plan units, for hairlines.
     pub fn hair(&self) -> f32 {
         1.0 / self.k

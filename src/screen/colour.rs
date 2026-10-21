@@ -1,5 +1,25 @@
 //! Colours as the page reads them, and blending.
 
+use core::sync::atomic::{AtomicBool, Ordering::Relaxed};
+
+/// Blending keeps each pixel's coverage as its alpha (see [`Screen::overlay`](crate::Screen::overlay)).
+static OVERLAY: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn set_overlay(on: bool) {
+    OVERLAY.store(on, Relaxed);
+}
+
+/// The alpha a pixel of alpha `d` gets under `a` (0..256) more coverage:
+/// opaque, unless the screen is an overlay.
+#[inline(always)]
+pub(crate) fn alpha_over(d: u32, ia: u32) -> u32 {
+    if OVERLAY.load(Relaxed) {
+        (255 - (((255 - (d >> 24)) * ia) >> 8)) << 24
+    } else {
+        0xFF00_0000
+    }
+}
+
 /// Colour as the page reads it: 0xAABBGGRR.
 pub const fn rgb(r: u8, g: u8, b: u8) -> u32 {
     0xFF00_0000 | (b as u32) << 16 | (g as u32) << 8 | r as u32
@@ -24,7 +44,7 @@ pub fn blend(p: &mut u32, c: u32, a: u32) {
     let ia = 256 - a;
     let rb = (((c & 0xFF00FF) * a + (d & 0xFF00FF) * ia) >> 8) & 0xFF00FF;
     let g = (((c & 0x00FF00) * a + (d & 0x00FF00) * ia) >> 8) & 0x00FF00;
-    *p = 0xFF00_0000 | rb | g;
+    *p = alpha_over(d, ia) | rb | g;
 }
 
 /// Mixes two colours: `t` = 0..1 of `c` over `d`.
