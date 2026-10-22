@@ -88,6 +88,12 @@ background inside a clip, without redrawing the board), `sprite_make_alpha`
 games drawing their own rows (a road): `span_px`, `row_px` with `wg::blend`,
 `px`, `size_px`.
 
+A game the page draws in 3D (it exports `wg3d_scene`, as `partial-combat/` in
+[wasmga-me/games](https://github.com/wasmga-me/games) does) calls
+`s.overlay(true)` and clears the screen to 0 each frame: drawing then keeps
+each pixel's coverage as alpha, and the page lays the screen over the scene as
+a HUD.
+
 Keys the pad lacks (digits, Backspace) reach `Game::key(code)` through the
 optional `wg_key` export, when the page sends them.
 

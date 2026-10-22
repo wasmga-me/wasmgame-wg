@@ -1,6 +1,6 @@
 //! Sprites: a box drawn once into its own buffer, then copied.
 
-use super::Screen;
+use super::{colour, Screen};
 
 /// Opaque black and white, the two grounds an alpha sprite is drawn on.
 const BLACK: u32 = 0xFF00_0000;
@@ -145,7 +145,7 @@ impl Screen {
                 let d = *p;
                 let rb = ((c & 0xFF00FF) + (((d & 0xFF00FF) * ia) >> 8)) & 0xFF00FF;
                 let g = ((c & 0x00FF00) + (((d & 0x00FF00) * ia) >> 8)) & 0x00FF00;
-                *p = 0xFF00_0000 | rb | g;
+                *p = colour::alpha_over(d, ia) | rb | g;
             }
         }
     }
