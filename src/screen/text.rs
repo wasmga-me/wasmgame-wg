@@ -95,34 +95,41 @@ impl Screen {
         // the field holds 128 on the glyph's edge and moves 127 over
         // SDF_SPREAD field pixels; this turns it into screen pixels
         let scale = SDF_SPREAD / 127.0 * k;
-        // the field at x, y, empty outside the glyph's box
-        let at = |x: i32, y: i32| -> f32 {
-            if x < 0 || y < 0 || x >= w || y >= h {
-                0.0
-            } else {
-                f[(y * w + x) as usize] as f32
-            }
-        };
+        // one row of the field at a time, blended between the two field
+        // rows around the pixels' centres, with an empty column each side
+        let mut col = [0.0f32; u8::MAX as usize + 2];
+        let col = &mut col[..w as usize + 2];
+        let full = weight(1.0, alpha);
+        let line = |y: i32| (0..h).contains(&y).then(|| &f[(y * w) as usize..][..w as usize]);
         for (j, row) in self.rows(y0, y1) {
-            // where the pixel's centre falls in the field, and the four
-            // field values around it to blend
+            // where the pixel's centre falls in the field
             let fy = (j as f32 + 0.5 - gy) * inv - 0.5;
             let iy = fy.floor() as i32;
             let ty = fy - iy as f32;
             if iy < -1 || iy >= h {
                 continue;
             }
+            let (r0, r1) = (line(iy), line(iy + 1));
+            let last = col.len() - 1;
+            for (x, v) in col[1..last].iter_mut().enumerate() {
+                let a = r0.map_or(0.0, |r| r[x] as f32);
+                let b = r1.map_or(0.0, |r| r[x] as f32);
+                *v = a + (b - a) * ty;
+            }
             for i in x0..x1 {
-                let fx = (i as f32 + 0.5 - gx) * inv - 0.5;
-                let ix = fx.floor() as i32;
-                let tx = fx - ix as f32;
-                if ix < -1 || ix >= w {
+                // col[ix + 1] is field column ix
+                let fx = (i as f32 + 0.5 - gx) * inv + 0.5;
+                let ix = fx.floor();
+                let tx = fx - ix;
+                let ix = ix as usize;
+                if fx < 0.0 || ix + 1 >= col.len() {
                     continue;
                 }
-                let v = (at(ix, iy) * (1.0 - tx) + at(ix + 1, iy) * tx) * (1.0 - ty)
-                    + (at(ix, iy + 1) * (1.0 - tx) + at(ix + 1, iy + 1) * tx) * ty;
-                let cov = ((v - 128.0) * scale + 0.5).clamp(0.0, 1.0);
-                if cov > 0.0 {
+                let v = col[ix] + (col[ix + 1] - col[ix]) * tx;
+                let cov = (v - 128.0) * scale + 0.5;
+                if cov >= 1.0 {
+                    blend(&mut row[i as usize], c, full);
+                } else if cov > 0.0 {
                     blend(&mut row[i as usize], c, weight(cov, alpha));
                 }
             }

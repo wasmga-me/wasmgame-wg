@@ -140,6 +140,10 @@ impl Screen {
                 if a == 0 {
                     continue;
                 }
+                if a == 255 {
+                    *p = c;
+                    continue;
+                }
                 // premultiplied: out = src + dst * (1 - a)
                 let ia = 256 - (a + (a >> 7));
                 let d = *p;

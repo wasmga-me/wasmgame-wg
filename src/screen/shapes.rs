@@ -76,11 +76,30 @@ impl Screen {
         // centre, and the half-size of the straight part between the corners
         let (cx, cy, hw, hh) = (x + w / 2.0, y + h / 2.0, w / 2.0 - r, h / 2.0 - r);
         let (x0, y0, x1, y1) = self.clipped(x, y, x + w, y + h);
+        if x1 <= x0 {
+            return;
+        }
         let grad = top != bottom;
+        let full = weight(1.0, alpha);
+        let ri = r - 0.5;
         for (j, row) in self.rows(y0, y1) {
             let qy = (j as f32 + 0.5 - cy).abs() - hh;
             let c = if grad { mix(bottom, top, (j as f32 + 0.5 - y) / h) } else { top };
-            for i in x0..x1 {
+            // pixels a..b are fully covered (within e of the middle), so
+            // coverage is worked out only near the edge
+            let (mut a, mut b) = (x1, x1);
+            if qy <= ri {
+                let e = hw + if qy <= 0.0 { ri } else { (ri * ri - qy * qy).sqrt() };
+                a = ((cx - e - 0.5).ceil() as i32).clamp(x0, x1);
+                b = (((cx + e - 0.5).floor() as i32) + 1).clamp(a, x1);
+            }
+            let middle = &mut row[a as usize..b as usize];
+            if full >= 256 {
+                middle.fill(c);
+            } else {
+                middle.iter_mut().for_each(|p| blend(p, c, full));
+            }
+            for i in (x0..a).chain(b..x1) {
                 let qx = (i as f32 + 0.5 - cx).abs() - hw;
                 let cov = (0.5 - round_box_dist(qx, qy, r)).clamp(0.0, 1.0);
                 if cov > 0.0 {
@@ -94,6 +113,11 @@ impl Screen {
     pub fn capsule_px(&mut self, ax: f32, ay: f32, bx: f32, by: f32, r: f32, c: u32, alpha: f32) {
         if r <= 0.0 || alpha <= 0.0 {
             return;
+        }
+        if ax == bx || ay == by {
+            // along an axis it is a rounded box, quicker to fill
+            let (x, y) = (ax.min(bx) - r, ay.min(by) - r);
+            return self.rrect_px(x, y, (bx - ax).abs() + 2.0 * r, (by - ay).abs() + 2.0 * r, r, c, alpha);
         }
         let (x0, y0, x1, y1) =
             self.clipped(ax.min(bx) - r - 1.0, ay.min(by) - r - 1.0, ax.max(bx) + r + 1.0, ay.max(by) + r + 1.0);
@@ -155,7 +179,12 @@ impl Screen {
         let (dx, dy) = (bx - ax, by - ay);
         let ll = dx * dx + dy * dy;
         let inv = if ll > 0.0 { 1.0 / ll } else { 0.0 };
+        // squared distances outside which a pixel isn't touched, and
+        // inside which it is fully covered all along
         let out2 = (rm + 0.5) * (rm + 0.5);
+        let rn = ra.min(rb);
+        let in2 = if rn > 0.5 { (rn - 0.5) * (rn - 0.5) } else { 0.0 };
+        let full = weight(1.0, alpha);
         for (j, row) in self.rows(y0, y1) {
             let py = j as f32 + 0.5;
             for i in x0..x1 {
@@ -163,10 +192,15 @@ impl Screen {
                 if d2 >= out2 {
                     continue;
                 }
+                let colour = || if ca == cb { ca } else { mix(cb, ca, t) };
+                if d2 <= in2 {
+                    blend(&mut row[i as usize], colour(), full);
+                    continue;
+                }
                 let r = ra + (rb - ra) * t;
                 let cov = (r + 0.5 - d2.sqrt()).clamp(0.0, 1.0);
                 if cov > 0.0 {
-                    blend(&mut row[i as usize], mix(cb, ca, t), weight(cov, alpha));
+                    blend(&mut row[i as usize], colour(), weight(cov, alpha));
                 }
             }
         }
