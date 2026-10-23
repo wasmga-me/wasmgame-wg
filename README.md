@@ -116,11 +116,25 @@ from Noto Sans) into `src/glyphs.rs` and `src/glyphs.bin`; `mod glyphs;` and
 `wg::add_glyphs(&glyphs::GLYPHS)` in `new()` turn them on. Run it again after
 changing the text.
 
+## Accessible board
+
+A board game (a grid of squares, played a move at a time) can also be
+played with a screen reader, a keyboard alone or a switch: implement
+`wg::Board` and add `wg::board!(MyGame);` after `wg::game!`. The play page
+then lays a grid of focusable squares over the board the game draws; arrows
+move between squares, Space makes the main move, X the second (flag, note),
+I reads the status, and what each move did is read out. The game supplies
+the words (each square's state, the status, what a move did, the keys), in
+the page's language with `wg::tr`, and the board's place in plan units; the
+page adds each square's name (A1, B1 ...). `tests/board.rs` is a whole small
+example. Sapper (`games-src/sapper.c` on the site) is the C version.
+
 ## Working on the engine
 
 `src/lib.rs` holds the events and re-exports; `game.rs` the `Game` trait and
 `Plain`, `input.rs` buttons, pointer and key repeat, `rng.rs` the `Rng`,
-`runtime.rs` the exports and `game!`, and `screen/` the drawing (`mod.rs`
+`runtime.rs` the exports and `game!`, `board.rs` the accessible board and
+`board!`, and `screen/` the drawing (`mod.rs`
 the screen and its clip, then `shapes.rs`, `text.rs`, `background.rs`,
 `sprite.rs`, `colour.rs`).
 
