@@ -14,6 +14,8 @@
 //! the run in it, options included, and everything else (animations, hover,
 //! sprites) in the game struct around it. See README.md next to this file.
 
+#[doc(hidden)]
+pub mod board;
 mod game;
 mod input;
 mod lang;
@@ -21,6 +23,7 @@ mod rng;
 mod runtime;
 mod screen;
 
+pub use board::Board;
 pub use game::{bytes_of, hash, Game, Plain};
 pub use input::{Input, KeyRepeat, Pointer, A, B, DIRS, DOWN, LEFT, M_LEFT, M_MIDDLE, M_RIGHT, RIGHT, UP};
 #[doc(hidden)]
