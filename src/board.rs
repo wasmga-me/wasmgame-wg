@@ -5,9 +5,7 @@
 //! [`game!`](crate::game). Write the words with [`tr`](crate::tr), so they
 //! come in the page's language.
 
-use core::cell::UnsafeCell;
-
-use crate::Game;
+use crate::{bytes_of, hash, Game};
 
 /// What a WG_A11Y_* text kind asks for (wg.h).
 #[doc(hidden)]
@@ -18,29 +16,6 @@ pub const STATUS: i32 = 1;
 pub const SAID: i32 = 2;
 #[doc(hidden)]
 pub const KEYS: i32 = 3;
-
-/// Where [`board!`](crate::board) keeps the text it hands the page, and what
-/// the last move said until the page reads it.
-#[doc(hidden)]
-pub struct Text(UnsafeCell<(String, String)>);
-// SAFETY: wasm32-unknown-unknown runs one thread
-unsafe impl Sync for Text {}
-
-impl Text {
-    pub const fn new() -> Self {
-        Text(UnsafeCell::new((String::new(), String::new())))
-    }
-    #[allow(clippy::mut_from_ref)]
-    pub fn out(&'static self) -> &'static mut String {
-        // SAFETY: one thread, and the page calls one export at a time
-        unsafe { &mut (*self.0.get()).0 }
-    }
-    #[allow(clippy::mut_from_ref)]
-    pub fn said(&'static self) -> &'static mut String {
-        // SAFETY: as above; never borrowed together with `out` across a call
-        unsafe { &mut (*self.0.get()).1 }
-    }
-}
 
 /// A board game, played on the page's accessible grid too.
 pub trait Board: Game {
@@ -63,10 +38,10 @@ pub trait Board: Game {
     /// flag, note) on square x, y. Write what it did into `said`, to be read
     /// out; returns `EV_*` bits, sent with the next frame.
     fn act(&mut self, x: i32, y: i32, a: i32, said: &mut String) -> u32;
-    /// Changes whenever any square's text or the status does; the page
-    /// reads them only then. By default the picture's hash.
+    /// Changes whenever any square's text does; the page reads them only
+    /// then. By default a hash of the save.
     fn rev(&mut self) -> u32 {
-        self.picture()
+        hash(0, bytes_of(self.save()))
     }
 }
 
@@ -75,8 +50,6 @@ pub trait Board: Game {
 #[macro_export]
 macro_rules! board {
     ($t:ty) => {
-        static WG_A11Y: $crate::Text = $crate::Text::new();
-
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_a11y_grid() -> i32 {
             <$t as $crate::Board>::grid(&WG_GAME.get().game).map_or(0, |(c, r)| c << 16 | r)
@@ -94,11 +67,11 @@ macro_rules! board {
         pub extern "C" fn wg_a11y_rect(k: i32) -> i32 {
             let rt = WG_GAME.get();
             let (x, y, size) = <$t as $crate::Board>::rect(&rt.game);
-            let s = &rt.screen;
+            let (px, py) = rt.screen.px(x, y);
             match k {
-                0 => (s.ox + x * s.k) as i32,
-                1 => (s.oy + y * s.k) as i32,
-                _ => (size * s.k * 100.0) as i32,
+                0 => px as i32,
+                1 => py as i32,
+                _ => (size * rt.screen.k * 100.0) as i32,
             }
         }
         #[unsafe(no_mangle)]
@@ -107,30 +80,26 @@ macro_rules! board {
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_a11y_buf() -> *const u8 {
-            WG_A11Y.out().as_ptr()
+            WG_GAME.get().a11y.0.as_ptr()
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_a11y_text(kind: i32, x: i32, y: i32) -> i32 {
-            let g = &WG_GAME.get().game;
-            let out = WG_A11Y.out();
+            let rt = WG_GAME.get();
+            let (out, said) = &mut rt.a11y;
             out.clear();
             match kind {
-                $crate::board::CELL => <$t as $crate::Board>::cell(g, x, y, out),
-                $crate::board::STATUS => <$t as $crate::Board>::status(g, out),
-                $crate::board::SAID => {
-                    ::core::mem::swap(out, WG_A11Y.said());
-                    WG_A11Y.said().clear();
-                }
-                $crate::board::KEYS => out.push_str(<$t as $crate::Board>::keys(g)),
+                $crate::board::CELL => <$t as $crate::Board>::cell(&rt.game, x, y, out),
+                $crate::board::STATUS => <$t as $crate::Board>::status(&rt.game, out),
+                // read once: `said` is left empty
+                $crate::board::SAID => ::core::mem::swap(out, said),
+                $crate::board::KEYS => out.push_str(<$t as $crate::Board>::keys(&rt.game)),
                 _ => {}
             }
             out.len() as i32
         }
         #[unsafe(no_mangle)]
         pub extern "C" fn wg_a11y_act(x: i32, y: i32, a: i32) {
-            let said = WG_A11Y.said();
-            said.clear();
-            WG_GAME.get().board_act(x, y, a, said)
+            WG_GAME.get().board_act(x, y, a)
         }
     };
 }

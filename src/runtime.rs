@@ -32,6 +32,10 @@ pub struct Runtime<G: Game> {
     redraw: bool,
     /// the last frame drew (wg_drawn)
     drawn: bool,
+    /// the accessible board's text for the page, and what the last move
+    /// said until the page reads it (board!)
+    #[doc(hidden)]
+    pub a11y: (String, String),
 }
 
 impl<G: Game> Runtime<G> {
@@ -49,6 +53,7 @@ impl<G: Game> Runtime<G> {
             picture: 0,
             redraw: true,
             drawn: false,
+            a11y: (String::new(), String::new()),
         }
     }
 
@@ -165,8 +170,9 @@ impl<G: Game> Runtime<G> {
 impl<G: Board> Runtime<G> {
     /// wg_a11y_act: a move from the page's accessible board; its events go
     /// out with the next frame, like a pointer's.
-    pub fn board_act(&mut self, x: i32, y: i32, a: i32, said: &mut String) {
-        self.pointer_events |= self.game.act(x, y, a, said);
+    pub fn board_act(&mut self, x: i32, y: i32, a: i32) {
+        self.a11y.1.clear();
+        self.pointer_events |= self.game.act(x, y, a, &mut self.a11y.1);
     }
 }
 

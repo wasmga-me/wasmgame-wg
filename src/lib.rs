@@ -23,8 +23,6 @@ mod rng;
 mod runtime;
 mod screen;
 
-#[doc(hidden)]
-pub use board::Text;
 pub use board::Board;
 pub use game::{bytes_of, hash, Game, Plain};
 pub use input::{Input, KeyRepeat, Pointer, A, B, DIRS, DOWN, LEFT, M_LEFT, M_MIDDLE, M_RIGHT, RIGHT, UP};
