@@ -96,4 +96,6 @@ fn board() {
     assert_eq!(wg_frame(0, 16), wg::EV_BLIP as i32);
     wg_a11y_focus(0, 0);
     assert_eq!(wg_a11y_cursor(), 0);
+    // a grid of squares has no boxes of its own
+    assert_eq!(wg_a11y_box(0, 0, 0), -1);
 }

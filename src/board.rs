@@ -29,6 +29,13 @@ pub trait Board: Game {
     fn rect(&self) -> (f32, f32, f32);
     /// Square x, y in words ("3 mines nearby"); the page adds its name (C4).
     fn cell(&self, x: i32, y: i32, out: &mut String);
+    /// For a board that isn't a grid of squares (tubes in a rack, hexes,
+    /// screws on plates): square x, y's own box in plan units, left, top,
+    /// width, height. The page lays each square there and leaves its name
+    /// to `cell`, which then says it ("tube 3", "red screw").
+    fn cell_box(&self, _x: i32, _y: i32) -> Option<(f32, f32, f32, f32)> {
+        None
+    }
     /// The run so far (mines left, time), read out on I.
     fn status(&self, out: &mut String);
     /// The keys, as the page reads them out: arrows move, Space the main
@@ -72,6 +79,18 @@ macro_rules! board {
                 0 => px as i32,
                 1 => py as i32,
                 _ => (size * rt.screen.k * 100.0) as i32,
+            }
+        }
+        #[unsafe(no_mangle)]
+        pub extern "C" fn wg_a11y_box(x: i32, y: i32, k: i32) -> i32 {
+            let rt = WG_GAME.get();
+            let Some((l, t, w, h)) = <$t as $crate::Board>::cell_box(&rt.game, x, y) else { return -1 };
+            let (px, py) = rt.screen.px(l, t);
+            match k {
+                0 => px as i32,
+                1 => py as i32,
+                2 => (w * rt.screen.k) as i32,
+                _ => (h * rt.screen.k) as i32,
             }
         }
         #[unsafe(no_mangle)]

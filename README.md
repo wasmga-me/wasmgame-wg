@@ -126,7 +126,10 @@ move between squares, Space makes the main move, X the second (flag, note),
 I reads the status, and what each move did is read out. The game supplies
 the words (each square's state, the status, what a move did, the keys), in
 the page's language with `wg::tr`, and the board's place in plan units; the
-page adds each square's name (A1, B1 ...). `tests/board.rs` is a whole small
+page adds each square's name (A1, B1 ...). A board that isn't a grid of
+squares (tubes in a rack, a hex board, screws on plates) also gives each
+square its own box with `Board::cell_box`; the page then lays each one where
+it is drawn and the game's words name it. `tests/board.rs` is a whole small
 example. Sapper (`games-src/sapper.c` on the site) is the C version.
 
 ## Working on the engine
