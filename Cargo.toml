@@ -7,3 +7,6 @@ description = "The wasmga.me native game ABI (wg.h) and smooth drawing (wgfb.h, 
 
 [lib]
 path = "src/lib.rs"
+
+[dependencies]
+miniz_oxide = { version = "0.9.1", default-features = false, features = ["with-alloc"] }

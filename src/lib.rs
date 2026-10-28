@@ -32,7 +32,7 @@ pub use lang::{lang, tr, DE, EN, ES, FR, JA, KO, LANGS, PT, RU, ZH, ZT};
 pub use rng::Rng;
 #[doc(hidden)]
 pub use runtime::{Runtime, Slot};
-pub use screen::{add_glyphs, blend, hex, mix, rgb, Glyph, Glyphs, Screen, Sprite};
+pub use screen::{add_glyphs, blend, hex, mix, rgb, Glyph, Glyphs, Image, Screen, Sprite};
 
 /// Events a frame returns; the page plays a sound for each.
 pub const EV_BLIP: u32 = 1;

@@ -5,12 +5,14 @@
 
 mod background;
 mod colour;
+mod image;
 mod shapes;
 mod sprite;
 mod text;
 
 use colour::weight;
 pub use colour::{blend, hex, mix, rgb};
+pub use image::Image;
 pub use sprite::Sprite;
 pub use text::{add_glyphs, Glyph, Glyphs};
 

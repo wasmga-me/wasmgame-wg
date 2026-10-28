@@ -82,6 +82,13 @@ once with `s.background(key, |s| ...)`, which redraws only when `key`
 changes, and things drawn many times the same (card backs) once into a
 `wg::Sprite` with `sprite_make`, then `s.sprite(&sp, x, y)`.
 
+Art made elsewhere (a PNG, say models rendered into a sprite sheet) loads
+with `wg::Image::png(include_bytes!("art.png"))` once in `new()`; `crop`
+cuts one sprite out of a sheet. `s.image(&img, x, y, w, h, alpha)` draws it
+filling a plan box (a negative `w` mirrors it), `s.image_turned(&img, cx, cy,
+w, h, angle, alpha)` turned about its middle. Each size an image is drawn at
+is scaled once, smoothly, and kept.
+
 Also: `set_clip`/`no_clip`, `background_edit` (redraw one square of the
 background inside a clip, without redrawing the board), `sprite_make_alpha`
 (soft-edged sprites: drawn over black and white, blended when put), and for
