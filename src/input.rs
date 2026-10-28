@@ -32,7 +32,9 @@ pub struct Input {
 pub struct Pointer {
     pub x: f32,
     pub y: f32,
-    /// false when it left the screen (x and y are then -1)
+    /// false when it left the screen (x and y are then -1). A held button
+    /// keeps the pointer followed off the screen, where x and y run past
+    /// its edges (negative too) with `inside` still true.
     pub inside: bool,
     pub held: u32,
     pub pressed: u32,

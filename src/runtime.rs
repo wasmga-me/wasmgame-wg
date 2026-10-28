@@ -114,13 +114,14 @@ impl<G: Game> Runtime<G> {
         events as i32
     }
 
-    /// wg_mouse: the pointer at screen pixel x, y (-1, -1 when it left).
+    /// wg_mouse: the pointer at screen pixel x, y (-1, -1 when it left;
+    /// a held pointer off the screen can be anywhere else, negative too).
     pub fn mouse(&mut self, x: i32, y: i32, buttons: i32) {
         let held = buttons as u32 & MOUSE_BUTTONS;
         let mut p = Pointer {
             x: -1.0,
             y: -1.0,
-            inside: x >= 0 && y >= 0,
+            inside: (x, y) != (-1, -1),
             held,
             pressed: held & !self.mouse_buttons,
             released: self.mouse_buttons & !held,
