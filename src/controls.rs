@@ -57,6 +57,7 @@ const MAX: usize = 4;
 pub struct Row {
     buttons: [Button; MAX],
     n: usize,
+    hidden: bool,
 }
 
 impl core::ops::Deref for Row {
@@ -81,8 +82,18 @@ pub fn row(icons: &[Icon], right: f32, cy: f32) -> Row {
 }
 
 impl Row {
+    /// The row kept in place but not shown or pressed (between levels), so
+    /// what stands beside it doesn't move when it goes.
+    pub fn hidden(mut self) -> Row {
+        self.hidden = true;
+        self
+    }
+
     /// The icon of the button under (x, y), if any.
     pub fn hit(&self, x: f32, y: f32) -> Option<Icon> {
+        if self.hidden {
+            return None;
+        }
         self.iter().find(|b| b.hit(x, y)).map(|b| b.icon)
     }
 
@@ -90,8 +101,10 @@ impl Row {
     /// can't be used now faded; returns the row's left edge (or `right`
     /// with no buttons), where text beside it has to stop.
     pub fn draw(&self, s: &mut Screen, hover: Option<Icon>, enabled: impl Fn(Icon) -> bool, right: f32) -> f32 {
-        for b in self.iter() {
-            b.draw(s, hover == Some(b.icon), enabled(b.icon));
+        if !self.hidden {
+            for b in self.iter() {
+                b.draw(s, hover == Some(b.icon), enabled(b.icon));
+            }
         }
         self.first().map_or(right, |b| b.x - b.r)
     }
@@ -106,7 +119,8 @@ impl Button {
     /// now (`!enabled`) is drawn faded.
     pub fn draw(&self, s: &mut Screen, hover: bool, enabled: bool) {
         let style = if self.icon == Icon::Go { GOLD } else { LIGHT };
-        let fill = if hover && enabled { mix(hex(0xffffff), hex(style.fill), 0.25) } else { hex(style.fill) };
+        // hover tints the disc with its icon's colour
+        let fill = if hover && enabled { mix(hex(style.icon), hex(style.fill), 0.14) } else { hex(style.fill) };
         let (x, y, r) = (self.x, self.y, self.r);
         let a = if enabled { 1.0 } else { 0.45 };
         s.disc(x, y + 1.5, r, hex(style.shadow), 0.3 * a);
@@ -172,6 +186,10 @@ fn head(s: &mut Screen, x: f32, y: f32, dx: f32, dy: f32, len: f32, w: f32, c: u
     }
 }
 
-/// The key that presses Restart, as [`Game::key`](crate::Game::key) gets it:
-/// R. Undo goes on the pad's B (X, Backspace), as in Decant.
-pub const RESTART_KEY: i32 = 'r' as i32;
+/// Whether a key [`Game::key`](crate::Game::key) got is the one that
+/// presses Restart: R, which the page sends as the character it types, so
+/// also what R types on Russian, Greek and Korean layouts. Undo goes on the
+/// pad's B (X, Backspace), as in Decant.
+pub fn is_restart_key(code: i32) -> bool {
+    matches!(char::from_u32(code as u32), Some('r' | 'к' | 'ρ' | 'ㄱ'))
+}
