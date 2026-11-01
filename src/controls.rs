@@ -123,39 +123,37 @@ impl Button {
         let fill = if hover && enabled { mix(hex(style.icon), hex(style.fill), 0.14) } else { hex(style.fill) };
         let (x, y, r) = (self.x, self.y, self.r);
         let a = if enabled { 1.0 } else { 0.45 };
-        s.disc(x, y + 1.5, r, hex(style.shadow), 0.3 * a);
-        s.disc(x, y, r, fill, 0.92 * a);
+        s.disc(x, y + r * 0.07, r, hex(style.shadow), 0.25 * a);
+        s.disc(x, y, r, fill, 0.88 * a);
+        s.ring(x, y, r - 0.55, 0.55, hex(0xffffff), 0.18 * a);
         // the icon stays opaque (its strokes overlap at the joins) and fades
         // into the disc instead
-        let ink = if enabled { hex(style.icon) } else { mix(hex(style.icon), fill, 0.45) };
+        let ink = if enabled { hex(style.icon) } else { mix(hex(style.icon), fill, 0.70) };
         let a = 1.0;
         // stroke half-width, and the icon's size, both with the button
-        let w = 0.7 * r / R;
+        let w = 1.35 * r / R;
         let k = r / R;
         match self.icon {
             Icon::Restart => {
-                // most of a circle, open at the top right, with the head at its end
-                let rr = 6.0 * k;
-                let (a0, a1) = (-0.35 * PI, 1.45 * PI);
+                // Open at the top left, with a broad clockwise arrowhead.
+                let rr = 6.1 * k;
+                let (a0, a1) = (-0.55 * PI, 1.30 * PI);
                 arc(s, x, y, rr, a0, a1, w, ink, a);
-                let (ex, ey) = (x + rr * a1.cos(), y + rr * a1.sin());
-                // heading along the circle at the end (clockwise on screen)
-                let (tx, ty) = (-a1.sin(), a1.cos());
-                head(s, ex, ey, tx, ty, 3.6 * k, w, ink, a);
+                let (ex, ey) = (x + rr * a0.cos(), y + rr * a0.sin());
+                head(s, ex, ey, -a0.sin(), a0.cos(), 4.8 * k, ink);
             }
             Icon::Undo => {
-                // a shaft left along the top, curling down round the right
-                let rr = 4.0 * k;
-                let (cx, cy) = (x + 1.5 * k, y + 1.0 * k);
+                let rr = 4.8 * k;
+                let (cx, cy) = (x + 0.8 * k, y + 0.8 * k);
                 let top = cy - rr;
-                s.line(x - 5.5 * k, top, cx, top, w, ink, a);
+                s.line(x - 4.0 * k, top, cx, top, w, ink, a);
                 arc(s, cx, cy, rr, -0.5 * PI, 0.5 * PI, w, ink, a);
-                s.line(cx, cy + rr, x - 1.0 * k, cy + rr, w, ink, a);
-                head(s, x - 5.5 * k, top, -1.0, 0.0, 3.6 * k, w, ink, a);
+                s.line(cx, cy + rr, x - 2.0 * k, cy + rr, w, ink, a);
+                head(s, x - 6.0 * k, top, -1.0, 0.0, 4.8 * k, ink);
             }
             Icon::Go => {
-                let h = 0.42 * r;
-                s.tri((x - 0.6 * h, y - h), (x - 0.6 * h, y + h), (x + 1.05 * h, y), ink, a);
+                let h = 0.57 * r;
+                s.tri((x - 0.6 * h, y - h), (x - 0.6 * h, y + h), (x + 1.00 * h, y), ink, a);
             }
         }
     }
@@ -176,14 +174,11 @@ fn arc(s: &mut Screen, cx: f32, cy: f32, r: f32, a0: f32, a1: f32, w: f32, c: u3
     }
 }
 
-/// An open arrowhead at (x, y) pointing along (dx, dy), a unit vector.
-fn head(s: &mut Screen, x: f32, y: f32, dx: f32, dy: f32, len: f32, w: f32, c: u32, alpha: f32) {
-    for side in [-1.0f32, 1.0] {
-        // 40 degrees either side of straight back
-        let (cs, sn) = (0.766f32, 0.643 * side);
-        let (bx, by) = (-dx * cs - -dy * sn, -dx * sn + -dy * cs);
-        s.line(x, y, x + bx * len, y + by * len, w, c, alpha);
-    }
+/// A solid arrowhead; drawing at full opacity avoids dark overlaps.
+fn head(s: &mut Screen, x: f32, y: f32, dx: f32, dy: f32, len: f32, ink: u32) {
+    let (bx, by) = (x - dx * len, y - dy * len);
+    let half = len * 0.70;
+    s.tri((x, y), (bx - dy * half, by + dx * half), (bx + dy * half, by - dx * half), ink, 1.0);
 }
 
 /// Whether a key [`Game::key`](crate::Game::key) got is the one that
