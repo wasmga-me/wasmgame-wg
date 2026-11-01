@@ -16,6 +16,7 @@
 
 #[doc(hidden)]
 pub mod board;
+pub mod controls;
 mod game;
 mod input;
 mod lang;
