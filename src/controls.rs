@@ -135,12 +135,12 @@ impl Button {
         let k = r / R;
         match self.icon {
             Icon::Restart => {
-                // Open at the top left, with a broad clockwise arrowhead.
-                let rr = 6.1 * k;
-                let (a0, a1) = (-0.55 * PI, 1.30 * PI);
+                // A 270-degree counterclockwise restart arrow with a real open
+                // quadrant. The head extends left from the top tangent; a near-complete ring hides the arrow at small sizes.
+                let rr = 6.2 * k;
+                let (a0, a1) = (-0.5 * PI, PI);
                 arc(s, x, y, rr, a0, a1, w, ink, a);
-                let (ex, ey) = (x + rr * a0.cos(), y + rr * a0.sin());
-                head(s, ex, ey, -a0.sin(), a0.cos(), 4.8 * k, ink);
+                head(s, x - 4.0 * k, y - rr, -1.0, 0.0, 4.0 * k, ink);
             }
             Icon::Undo => {
                 let rr = 4.8 * k;

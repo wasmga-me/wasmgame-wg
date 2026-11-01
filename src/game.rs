@@ -72,6 +72,9 @@ pub trait Game: Sized + 'static {
     fn over(&self) -> bool {
         false
     }
+    /// The run ended successfully. Separate from `over` so the host can
+    /// distinguish campaign completion from defeat, including after loading.
+    fn won(&self) -> bool { false }
     /// For a level picker (a catalog `setup` option with `levels`, whose
     /// choice is the level to start at, 0 for the first): the level the run
     /// is on now. The page remembers the furthest per device and offers

@@ -271,6 +271,10 @@ macro_rules! game {
             <$t as $crate::Game>::over(&WG_GAME.get().game) as i32
         }
         #[unsafe(no_mangle)]
+        pub extern "C" fn wg_won() -> i32 {
+            <$t as $crate::Game>::won(&WG_GAME.get().game) as i32
+        }
+        #[unsafe(no_mangle)]
         pub extern "C" fn wg_stat(i: i32) -> i32 {
             if i < 0 {
                 -1
