@@ -1,11 +1,17 @@
 [package]
-name = "wg"
+name = "wasmgame-wg"
 version = "0.1.0"
 edition = "2021"
-publish = false
 description = "The wasmga.me native game ABI (wg.h) and smooth drawing (wgfb.h, wgview.h) for games written in Rust"
+license = "MIT AND OFL-1.1"
+homepage = "https://wasmga.me"
+repository = "https://github.com/wasmga-me/wasmgame-wg"
+readme = "README.md"
+keywords = ["wasm", "webassembly", "game", "engine", "wasmgame"]
+categories = ["game-engines", "wasm"]
 
 [lib]
+name = "wg"
 path = "src/lib.rs"
 
 [dependencies]

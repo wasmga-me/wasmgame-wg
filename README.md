@@ -11,11 +11,14 @@ games (`sdf_font.h`). The games themselves live in
 
 ```toml
 [dependencies]
-wg = { git = "https://github.com/wasmga-me/wasmgame-wg" }
+wasmgame-wg = "0.1"
 ```
 
-Each game's `Cargo.lock` pins the engine commit; `cargo update -p wg` moves a
-game to the latest one.
+The crate is `wasmgame-wg` and the library is `wg`, so code says `wg::Game`.
+Each game's `Cargo.lock` pins the engine version; `cargo update -p wasmgame-wg`
+moves a game to the latest one.
+
+The games are at [wasmga.me](https://wasmga.me).
 
 ## New game
 

@@ -1,4 +1,4 @@
-//! The wasmga.me native game ABI (wg.h in wasmga-me/wasmgame-wg-c) for games written in Rust,
+//! The [wasmga.me](https://wasmga.me) native game ABI (wg.h in wasmga-me/wasmgame-wg-c) for games written in Rust,
 //! with smooth drawing at the screen's own size (wgfb.h and wgview.h, in
 //! [`Screen`]) and the same Inter font as the C games (sdf_font.h).
 //!
